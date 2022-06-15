@@ -9,6 +9,7 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
     <Grid>
-        <esriUI:MapView x:Name="MyMapView"/>
+        <WebView x:Name="webView" NavigationCompleted="webView1_NavigationCompleted" NavigationFailed="webView_NavigationFailed"/>
+        <esriUI:MapView x:Name="MyMapView" Visibility="Collapsed" />
     </Grid>
 </Page>
