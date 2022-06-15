@@ -37,8 +37,11 @@ namespace SecurityTesting
     /// </summary>
     public sealed partial class MainPage : Page
     {
+        //TODO:  Change this to the signin page not the portal home
+        //https://ua-gas-gisportal.southernco.com/portal/sharing/rest/oauth2/authorize?client_id=oHvyHoTBFYyzwTXV&display=default&response_type=token&expiration=20160&locale=en&redirect_uri=my-ags-app://auth
+        //https://ua-gas-gisportal.southernco.com/portal/sharing/rest/oauth2/authorize?response_type=token&redirect_uri=my-ags-app://auth&_ts=<timestamp>&client_id=oHvyHoTBFYyzwTXV&locale=en-US%7D
         private const string ServerUrlHome = "https://ua-gas-gisportal.southernco.com/portal/home/";
-        private const string AuthorizePage = "rest/oauth2/authorize";
+        private const string AuthorizePage = "https://ua-gas-gisportal.southernco.com/portal/sharing/rest/oauth2/authorize"; //Look for this - key value with OAuth Token 
         private const string AppClientId = "oHvyHoTBFYyzwTXV";
         private const string OAuthRedirectUrl = "my-ags-app://auth";
         private const string WebMapId = "5aab989b2829419399a2a665fd710dd7";
@@ -142,6 +145,7 @@ namespace SecurityTesting
 
         private void ArcGISHttpClientHandler_HttpRequestBegin(object s, System.Net.Http.HttpRequestMessage r)
         {
+            //
             if (r.RequestUri.Host == "ua-gas-gisportal.southernco.com")
             {
                 if (!cookiesSet)
@@ -164,7 +168,7 @@ namespace SecurityTesting
                         httpClientHandler.CookieContainer.Add(cookie);
                     }
 
-                    //cookiesSet = true;
+                    cookiesSet = true;
                 }
             }
         }
@@ -190,20 +194,12 @@ namespace SecurityTesting
                 // Create a token credential using the provided username and password.
                 try
                 {
-                    // Create a challenge request for portal credentials (OAuth credential request for arcgis.com)
-                    CredentialRequestInfo challengeRequest = new CredentialRequestInfo
-                    {
-                        // Use the OAuth authorization code workflow.
-                        GenerateTokenOptions = new GenerateTokenOptions
-                        {
-                            TokenAuthenticationType = TokenAuthenticationType.OAuthAuthorizationCode
-                        },
+                    OAuthTokenCredential userCredentials = new OAuthTokenCredential(new Uri(ServerUrlHome), "get the token from the authorize");   //.GetCredentialAsync(credentialRequestInfo,true);
 
-                        // Indicate the url (portal) to authenticate with (ArcGIS Online)
-                        ServiceUri = new Uri(ServerUrlHome)
-                    };
-                    Credential userCredentials = await AuthenticationManager.Current.GetCredentialAsync(challengeRequest, true);
+                    // Set the result on the task completion source.
                     _loginTaskCompletionSource.TrySetResult(userCredentials);
+                    //Credential userCredentials = await AuthenticationManager.Current.GetCredentialAsync(challengeRequest, true);
+                    //_loginTaskCompletionSource.TrySetResult(userCredentials);
                 }
                 catch (Exception ex)
                 {
