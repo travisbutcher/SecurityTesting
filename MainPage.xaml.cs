@@ -38,15 +38,15 @@ namespace SecurityTesting
     public sealed partial class MainPage : Page
     {
         //TODO:  Change this to the signin page not the portal home
-        //https://ua-gas-gisportal.southernco.com/portal/sharing/rest/oauth2/authorize?client_id=oHvyHoTBFYyzwTXV&display=default&response_type=token&expiration=20160&locale=en&redirect_uri=my-ags-app://auth
+        //https://ua-gas-gisportal.southernco.com/portal/sharing/rest/oauth2/authorize?client_id=oHvyHoTBFYyzwTXV&display=default&response_type=token&expiration=20160&locale=en&redirect_uri=my-ags-app%3A%2F%2Fauth
         //https://ua-gas-gisportal.southernco.com/portal/sharing/rest/oauth2/authorize?response_type=token&redirect_uri=my-ags-app://auth&_ts=<timestamp>&client_id=oHvyHoTBFYyzwTXV&locale=en-US%7D
-        private const string ServerUrlHome = "https://ua-gas-gisportal.southernco.com/portal/home/";
-        private const string AuthorizePage = "https://ua-gas-gisportal.southernco.com/portal/sharing/rest/oauth2/authorize"; //Look for this - key value with OAuth Token 
+        private const string PortalUrl = "https://ua-gas-gisportal.southernco.com/portal/";
+        private const string ServerUrlHome = PortalUrl + "/home/";
+        private const string AuthorizePage = PortalUrl + "/sharing/rest/oauth2/authorize?client_id=oHvyHoTBFYyzwTXV&display=default&response_type=token&expiration=20160&locale=en&redirect_uri=my-ags-app%3A%2F%2Fauth"; //Look for this - key value with OAuth Token 
         private const string AppClientId = "oHvyHoTBFYyzwTXV";
         private const string OAuthRedirectUrl = "my-ags-app://auth";
         private const string WebMapId = "5aab989b2829419399a2a665fd710dd7";
         private bool cookiesSet = false;
-        private bool portalLoggedIn = false;
         private bool authorizeLoad = false;
 
         // Task completion source to track a login attempt.
@@ -84,7 +84,7 @@ namespace SecurityTesting
             ArcGISHttpClientHandler.HttpResponseEnd += ArcGISHttpClientHandler_HttpResponseEnd;
 
             //Force a login to the Portal
-            ArcGISPortal arcgisPortal = await ArcGISPortal.CreateAsync(new Uri(ServerUrlHome), true);
+            ArcGISPortal arcgisPortal = await ArcGISPortal.CreateAsync(new Uri(PortalUrl), true);
 
             //Create a Link to the Portal Item
             PortalItem portalItem = await PortalItem.CreateAsync(arcgisPortal, WebMapId);
@@ -148,7 +148,7 @@ namespace SecurityTesting
             //
             if (r.RequestUri.Host == "ua-gas-gisportal.southernco.com")
             {
-                if (!cookiesSet)
+                if (!cookiesSet && authorizeLoad)
                 {
                     HttpBaseProtocolFilter myFilter = new HttpBaseProtocolFilter();
                     var cookieManager = myFilter.CookieManager;
@@ -184,31 +184,32 @@ namespace SecurityTesting
         private async void webView1_NavigationCompleted(WebView sender, WebViewNavigationCompletedEventArgs e)
         {
             Debug.WriteLine(e.Uri.AbsoluteUri);
-            if (e.Uri.AbsoluteUri.ToString().Contains(AuthorizePage))
+            if (e.Uri.AbsoluteUri.ToString().Contains("sharing/rest/oauth2/authorize"))
                 authorizeLoad = true;
 
-            if (e.Uri.AbsoluteUri.ToString() == ServerUrlHome && authorizeLoad)
+            if (authorizeLoad)
             {
-                // Create a new task completion source to return the user's login when complete.
-                // Set the login UI data context (LoginInfo object) as the AsyncState so it can be retrieved later.
-                // Create a token credential using the provided username and password.
-                try
+                if (e.Uri.AbsoluteUri.ToString() == ServerUrlHome && authorizeLoad)
                 {
-                    OAuthTokenCredential userCredentials = new OAuthTokenCredential(new Uri(ServerUrlHome), "get the token from the authorize");   //.GetCredentialAsync(credentialRequestInfo,true);
-
-                    // Set the result on the task completion source.
-                    _loginTaskCompletionSource.TrySetResult(userCredentials);
-                    //Credential userCredentials = await AuthenticationManager.Current.GetCredentialAsync(challengeRequest, true);
-                    //_loginTaskCompletionSource.TrySetResult(userCredentials);
+                    webView.Navigate(new Uri(AuthorizePage));
                 }
-                catch (Exception ex)
-                {
-                    // This causes the login attempt to fail.
-                    _loginTaskCompletionSource.TrySetException(ex);
+
+                //Get the OAuth on the App
+                if (e.Uri.AbsoluteUri.Contains("sharing/oauth2/approve")){
+                    
+                    //https://ua-gas-gisportal.southernco.com/portal/sharing/oauth2/approve?oauth_state=ZFJ-SGFRgwZSgjLtvZFAX6GO3PmLm2hf2ji1SzKZs74Ydnx6IWnkz9EV-nJHruWxiGIxO1RltVg5FxiNuR0T_U7DTh64dBTne3z4-FfP2y0pbkPuLdyFJk0vgtbh1x51OVLmlrL87Vy1osrJC2uE-pLE5nsRQb4AZYotoHkIdaUbU7M9Ti9eobGROpOFjxqsMUZXfnMajTKVe3919uOWOP3nBgM7UW_EZPVfVsIV7QZ9OMv5l_eCE1S3zOI8zCrY
+                    string token = String.Empty;
+                    string toBeSearched = "=";
+                    int ix = e.Uri.AbsoluteUri.IndexOf(toBeSearched);
+
+                    if (ix != -1)
+                        token = e.Uri.AbsoluteUri.Substring(ix + toBeSearched.Length);
+
+                    OAuthTokenCredential userCredentials = new OAuthTokenCredential(new Uri(PortalUrl), token);
+                    _loginTaskCompletionSource.TrySetResult(userCredentials);
                 }
             }
-            else
-                Console.WriteLine(e.Uri.AbsoluteUri.ToString());
+
         }
 
         private void webView_NavigationFailed(object sender, WebViewNavigationFailedEventArgs e)

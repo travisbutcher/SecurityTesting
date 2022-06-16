@@ -127,6 +127,7 @@
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">
       <SubType>Designer</SubType>
+      <CustomToolNamespace>my-ags-app</CustomToolNamespace>
     </AppxManifest>
   </ItemGroup>
   <ItemGroup>
