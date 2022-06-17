@@ -67,7 +67,7 @@ namespace SecurityTesting
 
 
             //Define the server information for ArcGIS Online
-            ServerInfo portalServerInfo = new ServerInfo(new Uri(ServerUrlHome))
+            ServerInfo portalServerInfo = new ServerInfo(new Uri(PortalUrl))
             {
                 TokenAuthenticationType = TokenAuthenticationType.OAuthAuthorizationCode,
                 OAuthClientInfo = new OAuthClientInfo(AppClientId, new Uri(OAuthRedirectUrl))
@@ -173,6 +173,44 @@ namespace SecurityTesting
             }
         }
 
+        private string GetUntilOrEmpty(string text, string stopAt = "-")
+        {
+            if (!String.IsNullOrWhiteSpace(text))
+            {
+                int charLocation = text.IndexOf(stopAt, StringComparison.Ordinal);
+
+                if (charLocation > 0)
+                {
+                    return text.Substring(0, charLocation);
+                }
+            }
+
+            return String.Empty;
+        }
+
+        private string GetEsriAuthToken()
+        {
+            //
+            HttpBaseProtocolFilter myFilter = new HttpBaseProtocolFilter();
+            var cookieManager = myFilter.CookieManager;
+            HttpCookieCollection myCookieJar = cookieManager.GetCookies(new Uri("https://ua-gas-gisportal.southernco.com"));
+
+            foreach (HttpCookie cook in myCookieJar)
+            {
+                Debug.WriteLine(cook.Name);
+                Debug.WriteLine(cook.Value);
+                if (cook.Name == "esri_auth")
+                {
+                    var token = this.GetUntilOrEmpty(cook.Value, "token%22%3A%22");
+                    token = token.Substring(token.LastIndexOf('%') + 1);
+                    return token;
+                }
+
+            }
+
+            return String.Empty;
+        }
+
         private void ArcGISHttpClientHandler_HttpResponseEnd(object sender, HttpResponseEndEventArgs e)
         {
             if (e.Response.Headers.Server.ToString().Contains("BigIP") && e.Response.StatusCode == System.Net.HttpStatusCode.OK)
@@ -205,6 +243,7 @@ namespace SecurityTesting
                     if (ix != -1)
                         token = e.Uri.AbsoluteUri.Substring(ix + toBeSearched.Length);
 
+                    token = GetEsriAuthToken();
                     OAuthTokenCredential userCredentials = new OAuthTokenCredential(new Uri(PortalUrl), token);
                     _loginTaskCompletionSource.TrySetResult(userCredentials);
                 }
