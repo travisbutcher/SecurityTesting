@@ -145,7 +145,7 @@ namespace SecurityTesting
 
         private void ArcGISHttpClientHandler_HttpRequestBegin(object s, System.Net.Http.HttpRequestMessage r)
         {
-            //
+            Debug.WriteLine("Request Begin: " + r.RequestUri.AbsoluteUri);
             if (r.RequestUri.Host == "ua-gas-gisportal.southernco.com")
             {
                 if (!cookiesSet && authorizeLoad)
@@ -221,7 +221,7 @@ namespace SecurityTesting
  
         private async void webView1_NavigationCompleted(WebView sender, WebViewNavigationCompletedEventArgs e)
         {
-            Debug.WriteLine(e.Uri.AbsoluteUri);
+            Debug.WriteLine("Navigation complete:  ", e.Uri.AbsoluteUri);
             if (e.Uri.AbsoluteUri.ToString().Contains("sharing/rest/oauth2/authorize"))
                 authorizeLoad = true;
 
