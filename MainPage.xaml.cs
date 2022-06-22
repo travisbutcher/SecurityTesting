@@ -168,7 +168,7 @@ namespace SecurityTesting
                         httpClientHandler.CookieContainer.Add(cookie);
                     }
 
-                    cookiesSet = true;
+                    //cookiesSet = true;
                 }
             }
         }
@@ -201,8 +201,9 @@ namespace SecurityTesting
                 Debug.WriteLine(cook.Value);
                 if (cook.Name == "esri_auth")
                 {
-                    var token = this.GetUntilOrEmpty(cook.Value, "token%22%3A%22");
-                    token = token.Substring(token.LastIndexOf('%') + 1);
+                    string search = "token%22%3A%22";
+                    var token = cook.Value.Substring(cook.Value.IndexOf(search) + search.Length);
+                    token = GetUntilOrEmpty(token,"%");
                     return token;
                 }
 
